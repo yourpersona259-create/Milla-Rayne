@@ -11,8 +11,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Run Gemini CLI
+      - name: Run Gemini CLI to generate code
         uses: google-github-actions/run-gemini-cli@v0.1.12
+        with:
+          args: "generate --output generated_code.js --prompt 'Create a function that returns the sum of two numbers.'"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6

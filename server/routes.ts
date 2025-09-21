@@ -16,7 +16,23 @@ import { initializeFaceRecognition, trainRecognition, identifyPerson, getRecogni
 import { analyzeVideo, generateVideoInsights } from "./gemini";
 import { generateMistralResponse } from "./mistralService";
 import { generateXAIResponse } from "./xaiService";
+import { Router } from 'express';
+import { saveMemory, getMemories } from './memorySync'; // Import our new service
 
+const router = Router();
+
+router.post('/sync/memory', async (req, res) => {
+  const { newMemory } = req.body;
+  await saveMemory(newMemory);
+  res.status(200).send({ message: 'Memory synced successfully.' });
+});
+
+router.get('/sync/memories', async (req, res) => {
+  const memories = await getMemories();
+  res.status(200).json(memories);
+});
+
+export default router;
 // Fallback image analysis when AI services are unavailable
 function generateImageAnalysisFallback(userMessage: string): string {
   // Check if this is a camera capture

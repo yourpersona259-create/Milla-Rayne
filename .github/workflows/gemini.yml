@@ -1,5 +1,7 @@
 name: Run Gemini CLI
 
+# This workflow will also create a pull request for any changes made by the workflow
+
 on:
   workflow_dispatch:
 
@@ -11,3 +13,11 @@ jobs:
         uses: actions/checkout@v4
       - name: Run Gemini CLI
         uses: google-github-actions/run-gemini-cli@v0.1.12
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "Automated changes from Gemini CLI"
+          title: "Automated PR from Gemini CLI"
+          body: "This pull request was created automatically by the workflow."
+          branch: "gemini-auto-pr"

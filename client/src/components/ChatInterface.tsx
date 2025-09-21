@@ -1091,36 +1091,56 @@ export default function ChatInterface({
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="border-t border-white/20 p-6 bg-gradient-to-r from-black/30 to-black/25 backdrop-blur-sm">
-        <div className="flex space-x-4">
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={isLoading}
-            className="flex-1 bg-white/10 border-2 border-white/20 rounded-2xl px-6 py-4 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400/50 transition-all duration-200 text-base backdrop-blur-sm"
-            placeholder="Share your thoughts with Milla..."
-            onKeyDown={e => { if (e.key === "Enter" && !isLoading) handleSend(); }}
-          />
-          <button
-            onClick={handleSend}
-            disabled={isLoading || !input.trim()}
-            className={`px-8 py-4 rounded-2xl font-semibold text-base transition-all duration-200 transform ${
-              isLoading || !input.trim() 
-                ? "bg-gray-600/50 text-gray-400 cursor-not-allowed" 
-                : "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:scale-105 shadow-lg"
-            }`}
-            style={{
-              boxShadow: !isLoading && input.trim() ? "0 4px 16px rgba(59, 130, 246, 0.3)" : undefined
-            }}
-          >
-            {isLoading ? (
-              <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <i className="fas fa-paper-plane text-lg"></i>
-            )}
-          </button>
+
+        {/* Error Display */}
+        {error && (
+          <div className="flex-shrink-0 px-4 py-2 bg-red-500/20 border-t border-red-400/30 backdrop-blur-sm">
+            <div className="text-red-300 text-sm flex items-center">
+              <i className="fas fa-exclamation-triangle mr-2"></i>
+              {error}
+            </div>
+          </div>
+        )}
+
+        {/* Input Area */}
+        <div className="flex-shrink-0 p-4 border-t border-white/10 bg-black/20 backdrop-blur-sm">
+          <div className="flex space-x-2">
+            <div className="flex-1 relative">
+              <Textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your message..."
+                className="resize-none bg-white/10 border-white/20 text-white placeholder-white/50 rounded-xl backdrop-blur-sm focus:border-pink-400/50 focus:ring-pink-400/25 min-h-[40px] max-h-32 transition-all duration-200"
+                rows={1}
+                disabled={isLoading}
+                style={{
+                  height: 'auto',
+                  minHeight: '40px',
+                  maxHeight: '128px'
+                }}
+              />
+            </div>
+            <Button
+              onClick={handleSendMessage}
+              disabled={!input.trim() || isLoading}
+              className="bg-gradient-to-r from-pink-500/80 to-purple-500/80 hover:from-pink-500 hover:to-purple-500 text-white border-pink-400/30 backdrop-blur-sm rounded-xl px-4 py-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed chat-button"
+              size={isMobile ? "sm" : "default"}
+            >
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  {!isMobile && <span className="text-sm">Sending...</span>}
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <i className="fas fa-paper-plane text-sm"></i>
+                  {!isMobile && <span className="text-sm">Send</span>}
+                </div>
+              )}
+            </Button>
+          </div>
         </div>
 
       </div>

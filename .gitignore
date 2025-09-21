@@ -4,4 +4,8 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
-.avatar-backup
+.avatar-backup# gemini-cli settings
+.gemini/
+
+# GitHub App credentials
+gha-creds-*.json

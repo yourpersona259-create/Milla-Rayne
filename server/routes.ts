@@ -1,13 +1,21 @@
-// ... earlier code ...
+// server/routes.ts
+import { Router } from 'express';
+import { saveMemory, getMemories } from './memorySync'; // Import our new service
 
-// Remove synchronous generateIntelligentFallback function here
-// function generateIntelligentFallback(...) {
-//    ...
-// }
+const router = Router();
 
-// Keep the async version of the generateIntelligentFallback function
-async function generateIntelligentFallback(...) {
-    ...
-}
+// Existing routes...
 
-// ... later code ...
+// Our new memory syncing route
+router.post('/sync/memory', async (req, res) => {
+  const { newMemory } = req.body;
+  await saveMemory(newMemory);
+  res.status(200).send({ message: 'Memory synced successfully.' });
+});
+
+router.get('/sync/memories', async (req, res) => {
+  const memories = await getMemories();
+  res.status(200).json({ memories });
+});
+
+export default router;

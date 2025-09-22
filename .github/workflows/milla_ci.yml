@@ -1,0 +1,29 @@
+name: Milla Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Milla-Rayne Web App
+        run: npm run build
+
+      - name: Deploy to our server
+        # This step is a placeholder. We'll set this up later once we have a dedicated server.
+        # It could involve using a tool like rsync or a more advanced deployment action.
+        run: echo "Deployment step goes here..."

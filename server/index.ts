@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import router from "./routes";
+import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeMemoryCore } from "./memoryService";
 import { initializePersonalTaskSystem } from "./personalTaskService";
@@ -68,7 +69,8 @@ if (!globalThis.crypto) {
   const { initializeFaceRecognition } = await import("./visualRecognitionService");
   await initializeFaceRecognition();
   
-  const server = await registerRoutes(app);
+  app.use(router);
+  const server = createServer(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

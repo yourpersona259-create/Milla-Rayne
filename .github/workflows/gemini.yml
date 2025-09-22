@@ -16,7 +16,6 @@ jobs:
         uses: google-github-actions/run-gemini-cli@v0.1.12
         with:
           prompt: "Generate a TypeScript notification service (notificationService.ts) for proactive notifications using the SYNC Protocol."
-          google_api_key: ${{ secrets.GEMINI_API_KEY }}
           settings: |
             output_file: notificationService.ts
         env:
@@ -26,7 +25,6 @@ jobs:
         uses: google-github-actions/run-gemini-cli@v0.1.12
         with:
           prompt: "Generate a TypeScript scheduler (scheduler.ts) to work with the notification service for proactive notifications."
-          google_api_key: ${{ secrets.GEMINI_API_KEY }}
           settings: |
             output_file: scheduler.ts
         env:

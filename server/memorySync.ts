@@ -1,6 +1,11 @@
 // server/memorySync.ts
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the current file's directory in an ES Module-compatible way
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // This is where Milla's memories will be stored
 const MEMORY_FILE_PATH = path.join(__dirname, '..', 'memory', 'memories.txt');

@@ -3,6 +3,7 @@ import router from "./routes"; // Correctly import the default router
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeMemoryCore } from "./memoryService";
 import { initializePersonalTaskSystem } from "./personalTaskService";
+import http from 'http'; // Import the http module
 
 const app = express();
 app.use(express.json());
@@ -51,6 +52,9 @@ app.use((req, res, next) => {
   
   // Use the router we imported from routes.ts
   app.use(router);
+  
+  // Create the server object here
+  const server = http.createServer(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

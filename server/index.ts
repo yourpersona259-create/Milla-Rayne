@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import router from "./routes"; // Correctly import the default router
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeMemoryCore } from "./memoryService";
 import { initializePersonalTaskSystem } from "./personalTaskService";
@@ -49,7 +49,8 @@ app.use((req, res, next) => {
   const { initializeFaceRecognition } = await import("./visualRecognitionService");
   await initializeFaceRecognition();
   
-  const server = await registerRoutes(app);
+  // Use the router we imported from routes.ts
+  app.use(router);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

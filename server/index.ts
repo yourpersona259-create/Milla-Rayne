@@ -1,18 +1,8 @@
-import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
-import router from "./routes";
-import { createServer } from "http";
+import router from "./routes"; // Correctly import the default router
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeMemoryCore } from "./memoryService";
 import { initializePersonalTaskSystem } from "./personalTaskService";
-import crypto from 'crypto';
-
-// Polyfill crypto.getRandomValues for Node.js
-if (!globalThis.crypto) {
-  globalThis.crypto = {
-    getRandomValues: (buffer: any) => crypto.randomFillSync(buffer)
-  } as Crypto;
-}
 
 const app = express();
 app.use(express.json());
@@ -48,19 +38,9 @@ app.use((req, res, next) => {
   next();
 });
 
-if (!globalThis.crypto) {
-  globalThis.crypto = {
-    getRandomValues: (buffer: any) => crypto.randomFillSync(buffer)
-  } as Crypto;
-}
-
 (async () => {
   // Initialize Memory Core system at startup
   await initializeMemoryCore();
-  
-  // Initialize User Tasks system
-  const { initializeUserTasks } = await import("./userTaskService");
-  await initializeUserTasks();
   
   // REMOVED - Personal Task system (user rarely used it)
   // await initializePersonalTaskSystem();
@@ -69,8 +49,8 @@ if (!globalThis.crypto) {
   const { initializeFaceRecognition } = await import("./visualRecognitionService");
   await initializeFaceRecognition();
   
+  // Use the router we imported from routes.ts
   app.use(router);
-  const server = createServer(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

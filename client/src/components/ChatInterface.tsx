@@ -37,7 +37,7 @@ const ImageWithFallback = ({ imageUrl, altText }: ImageWithFallbackProps) => {
 
   return (
     <div className="my-3">
-      <img 
+      <img
         src={imageUrl}
         alt={altText}
         className="max-w-full h-auto rounded-lg shadow-lg border border-pink-300/20"
@@ -72,10 +72,10 @@ interface ChatInterfaceProps {
   };
 }
 
-export default function ChatInterface({ 
-  onAvatarStateChange, 
+export default function ChatInterface({
+  onAvatarStateChange,
   onSpeakingStateChange,
-  voiceEnabled = false, 
+  voiceEnabled = false,
   speechRate = 1.0,
   voicePitch = 1.1,
   voiceVolume = 0.8,
@@ -89,7 +89,7 @@ export default function ChatInterface({
   const [showThinking, setShowThinking] = useState(false);
   const [thinkingSteps, setThinkingSteps] = useState<string[]>([]);
   const [showVideoAnalyzer, setShowVideoAnalyzer] = useState(false);
-  
+
   // Track user typing state
   const [userIsTyping, setUserIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -99,10 +99,10 @@ export default function ChatInterface({
 
   // Voice functionality
   const { transcript, isListening, startListening, stopListening, resetTranscript } = useSpeechRecognition();
-  const { 
-    speak, 
-    speaking: isSpeaking, 
-    cancel: stopSpeaking, 
+  const {
+    speak,
+    speaking: isSpeaking,
+    cancel: stopSpeaking,
     voice,
     setVoice,
     rate,
@@ -112,7 +112,7 @@ export default function ChatInterface({
     volume,
     setVolume
   } = useSpeechSynthesis();
-  
+
   // Sync voice settings from props
   useEffect(() => {
     if (selectedVoice && voice !== selectedVoice) {
@@ -133,22 +133,22 @@ export default function ChatInterface({
   const renderMessageContent = (content: string) => {
     // Handle null/undefined content
     if (!content) return content;
-    
+
     // Simple approach: detect image markdown and replace with img tags
     const imageMarkdownPattern = /!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g;
-    
+
     // Check if content contains image markdown
     if (!imageMarkdownPattern.test(content)) {
       return content;
     }
-    
+
     // Reset regex lastIndex for reuse
     imageMarkdownPattern.lastIndex = 0;
-    
+
     // Split content and replace images
     const parts = content.split(imageMarkdownPattern);
     const elements: React.ReactNode[] = [];
-    
+
     for (let i = 0; i < parts.length; i++) {
       if (i % 3 === 0) {
         // Text content
@@ -163,7 +163,7 @@ export default function ChatInterface({
         const altText = parts[i - 1] || "Generated Image";
         const imageUrl = parts[i];
         elements.push(
-          <ImageWithFallback 
+          <ImageWithFallback
             key={i}
             imageUrl={imageUrl}
             altText={altText}
@@ -171,10 +171,10 @@ export default function ChatInterface({
         );
       }
     }
-    
+
     return <div className="whitespace-pre-wrap">{elements}</div>;
   };
-  
+
   // Camera functionality
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -183,7 +183,7 @@ export default function ChatInterface({
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const videoRef = useRef<HTMLVideoElement>(null);
   const analysisIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Set speech rate when prop changes
   useEffect(() => {
     setRate(speechRate);
@@ -193,24 +193,24 @@ export default function ChatInterface({
   const startCamera = async () => {
     try {
       console.log("Requesting camera access...");
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode },
-        audio: false 
+        audio: false
       });
-      
+
       console.log("Camera stream obtained:", stream);
       console.log("Video tracks:", stream.getVideoTracks());
-      
+
       setCameraStream(stream);
       setIsCameraActive(true);
-      
+
        // Wait a moment for state to update, then set the video source
       setTimeout(() => {
         if (videoRef.current && stream) {
           console.log("Setting video source...");
           videoRef.current.srcObject = stream;
-          
+
           videoRef.current.onloadedmetadata = () => {
             console.log("Video metadata loaded, attempting to play...");
             if (videoRef.current) {
@@ -222,9 +222,9 @@ export default function ChatInterface({
                 .catch(e => console.error("Video play failed:", e));
             }
           };
-        } 
+        }
       }, 100);
-      
+
       toast({
         title: "Enhanced Camera Active",
         description: "Milla can now see you in real-time and detect your emotions",
@@ -232,7 +232,7 @@ export default function ChatInterface({
     } catch (error) {
       console.error("Camera access error:", error);
       toast({
-        title: "Camera Error", 
+        title: "Camera Error",
         description: `Failed to access camera: ${(error as Error).message}. Please allow camera permissions.`,
         variant: "destructive",
       });
@@ -241,14 +241,14 @@ export default function ChatInterface({
 
   const switchCamera = async () => {
     if (!isCameraActive) return;
-    
+
     // Stop current stream
     stopCamera();
-    
+
     // Switch facing mode
     const newFacingMode = facingMode === "user" ? "environment" : "user";
     setFacingMode(newFacingMode);
-    
+
     // Wait a moment then restart with new facing mode
     setTimeout(() => {
       startCamera();
@@ -257,10 +257,10 @@ export default function ChatInterface({
 
   const startRealTimeAnalysis = () => {
     if (analysisIntervalRef.current) return; // Already running
-    
+
     setIsAnalyzingVideo(true);
     console.log("Starting real-time video analysis...");
-    
+
 //    // Analyze video frames every 3 seconds
     analysisIntervalRef.current = setInterval(() => {
       if (videoRef.current && isCameraActive) {
@@ -280,25 +280,25 @@ export default function ChatInterface({
 
   const analyzeCurrentFrame = async () => {
     if (!videoRef.current) return;
-    
+
     try {
       const canvas = document.createElement('canvas');
       const video = videoRef.current;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0);
         const imageData = canvas.toDataURL('image/jpeg', 0.6);
-        
+
         // Send for emotion analysis
         const response = await fetch('/api/analyze-emotion', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageData, timestamp: Date.now() })
         });
-        
+
         if (response.ok) {
           const result = await response.json();
           if (result.emotion) {
@@ -334,19 +334,19 @@ export default function ChatInterface({
   
   // Function to load memories when the component mounts
   const loadMemories = async () => {
-    const memories = await MillaCore.MemoryService.getMemories();
+    const memories = await MemoryService.getMemories();
     setAllMemories(memories);
   };
   
   // Use a separate function to save the conversation
   const saveConversationToMemory = async (userMessage: string, aiMessage: string) => {
     const memory = `[${formatTimeCST(new Date())}] You: ${userMessage}\n[${formatTimeCST(new Date())}] Milla: ${aiMessage}\n`;
-    await MillaCore.MemoryService.saveMemory(memory);
+    await MemoryService.saveMemory(memory);
   };
-  
+
   const sendMessageWithImage = async (messageContent: string, imageData: string) => {
     onAvatarStateChange("thinking");
-    
+
     // Extract user name if provided in this message
     extractAndSetUserName(messageContent);
     
@@ -359,9 +359,9 @@ export default function ChatInterface({
       userId: null,
       conversationHistory: recentMessages,
       userName: userName,
-      imageData: imageData // Include base64 image data
+      imageData: imageData, // Include base64 image data
     });
-    
+
     const data = await response.json();
     
     // Handle success
@@ -375,12 +375,12 @@ export default function ChatInterface({
         addExchange(data.userMessage.content, data.aiMessage.content);
         queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
     }
-    
+
     // Speak the response if voice is enabled
     if (voiceEnabled && data.aiMessage?.content) {
       speak(data.aiMessage.content);
     }
-    
+
     // Brief delay to show responding state, then reset to neutral
     setTimeout(() => {
       onAvatarStateChange("neutral");
@@ -389,17 +389,17 @@ export default function ChatInterface({
 
   const capturePhoto = async () => {
     if (!videoRef.current || !isCameraActive) return;
-    
+
     const canvas = document.createElement('canvas');
     const video = videoRef.current;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
+
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(video, 0, 0);
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      
+
       // Send photo to Milla for analysis
       const photoMessage = "I'm sharing a photo from my camera with you.";
       try {
@@ -456,7 +456,7 @@ export default function ChatInterface({
   //       const response = await fetch('/api/proactive-message');
   //       if (response.ok) {
   //         const data = await response.json();
-  //         
+  //
   //         // Handle break reminders with highest priority
   //         if (data.breakReminder) {
   //           // Show break reminder as a toast notification
@@ -465,7 +465,7 @@ export default function ChatInterface({
   //             description: data.breakReminder,
   //             duration: 10000, // Show for 10 seconds
   //           });
-  //           
+  //
   //           // Also add to conversation as a system message
   //           const breakMessage = {
   //             id: `break-reminder-${Date.now()}`,
@@ -475,15 +475,15 @@ export default function ChatInterface({
   //             userId: null,
   //             timestamp: new Date()
   //           };
-  //           
+  //
   //           // Add to conversation memory and update query cache
   //           addExchange("", data.breakReminder);
   //           const currentMessages = queryClient.getQueryData(["/api/messages"]) as Message[] || [];
   //           queryClient.setQueryData(["/api/messages"], [...currentMessages, breakMessage]);
-  //           
+  //
   //           console.log("Break reminder shown:", data.breakReminder);
   //         }
-  //         
+  //
   //         // Handle post-break welcome messages (high priority)
   //         else if (data.postBreakReachout) {
   //           // Show as toast notification
@@ -492,7 +492,7 @@ export default function ChatInterface({
   //             description: data.postBreakReachout,
   //             duration: 8000, // Show for 8 seconds
   //           });
-  //           
+  //
   //           // Also add to conversation as a system message
   //           const welcomeMessage = {
   //             id: `welcome-back-${Date.now()}`,
@@ -502,15 +502,15 @@ export default function ChatInterface({
   //             userId: null,
   //             timestamp: new Date()
   //           };
-  //           
+  //
   //           // Add to conversation memory and update query cache
   //           addExchange("", data.postBreakReachout);
   //           const currentMessages = queryClient.getQueryData(["/api/messages"]) as Message[] || [];
   //           queryClient.setQueryData(["/api/messages"], [...currentMessages, welcomeMessage]);
-  //           
+  //
   //           console.log("Post-break reachout shown:", data.postBreakReachout);
   //         }
-  //         
+  //
   //         // Handle regular proactive messages (lower priority)
   //         else if (data.message) {
   //           console.log("Proactive message available:", data.message);
@@ -523,10 +523,10 @@ export default function ChatInterface({
 
   //   // Check for proactive messages and break reminders every 15 minutes (reduced for performance)
   //   const interval = setInterval(checkProactiveEngagement, 15 * 60 * 1000);
-    
+  //
   //   // Also check immediately on component mount
   //   setTimeout(checkProactiveEngagement, 2000);
-    
+  //
   //   return () => clearInterval(interval);
   // }, [toast, addExchange, queryClient]);
 
@@ -537,10 +537,10 @@ export default function ChatInterface({
     if (identityResponse) {
       return identityResponse;
     }
-    
+
     // Check for name queries
     const lowerContent = content.toLowerCase();
-    if (lowerContent.includes('what is my name') || lowerContent.includes('what\'s my name') || 
+    if (lowerContent.includes('what is my name') || lowerContent.includes('what\'s my name') ||
         (lowerContent.includes('my name') && lowerContent.includes('?'))) {
       console.log('Name query detected. Current userName:', userName); // Debug log
       if (userName) {
@@ -549,12 +549,12 @@ export default function ChatInterface({
         return "I don't recall you telling me your name yet. What would you like me to call you?";
       }
     }
-    
+
     // Check for action commands
     if (lowerContent.includes('create') && lowerContent.includes('note') && lowerContent.includes('keep')) {
       return "Functionality to create Keep notes is planned for a future update.";
     }
-    
+
     return null;
   };
 
@@ -585,32 +585,32 @@ export default function ChatInterface({
   const sendMessageMutation = useMutation({
     mutationFn: async (messageContent: string) => {
       onAvatarStateChange("thinking");
-      
+
       // Show thinking process for complex messages
       if (messageContent.length > 20 || messageContent.includes('?')) {
         setShowThinking(true);
         setThinkingSteps([]);
-        
+
         // Simulate thinking steps
         // Reasoning steps will come from the server response
       }
-      
+
       // Check for special commands (identity queries, actions) first
       const specialResponse = handleSpecialCommands(messageContent);
       if (specialResponse) {
-        return { 
-          userMessage: { content: messageContent, role: "user" }, 
+        return {
+          userMessage: { content: messageContent, role: "user" },
           aiMessage: { content: specialResponse, role: "assistant" },
           isSpecialCommand: true
         };
       }
-      
+
       // Extract user name if provided in this message
       extractAndSetUserName(messageContent);
-      
+
       // Include conversation context for AI to reference (last 4 messages)
       const recentMessages = getRecentMessages();
-      
+
       const response = await apiRequest("POST", "/api/messages", {
         content: messageContent,
         role: "user",
@@ -624,12 +624,12 @@ export default function ChatInterface({
     onSuccess: (data) => {
       setMessage("");
       setIsTyping(false);
-      
+
       // Save the conversation to memory
       if (data.userMessage && data.aiMessage) {
         saveConversationToMemory(data.userMessage.content, data.aiMessage.content);
       }
-      
+
       // Display actual reasoning steps from server if available
       if (data.reasoning && data.reasoning.length > 0) {
         setThinkingSteps(data.reasoning);
@@ -642,19 +642,19 @@ export default function ChatInterface({
         setShowThinking(false);
         setThinkingSteps([]);
       }
-      
+
       // Check if Milla chose to respond
       if (data.aiMessage) {
         // Milla decided to respond
         onAvatarStateChange("responding");
-        
+
         // Add to conversation memory
         addExchange(data.userMessage.content, data.aiMessage.content);
-        
+
         // For special commands (local responses), manually add to message cache
         if (data.isSpecialCommand) {
           const newMessages = [...(queryClient.getQueryData(["/api/messages"]) as Message[] || [])];
-          
+
           // Add user message
           const userMessage = {
             id: `user-${Date.now()}`,
@@ -664,7 +664,7 @@ export default function ChatInterface({
             userId: null,
             timestamp: new Date()
           };
-          
+
           // Add assistant message
           const assistantMessage = {
             id: `assistant-${Date.now()}`,
@@ -674,42 +674,42 @@ export default function ChatInterface({
             userId: null,
             timestamp: new Date()
           };
-          
+
           newMessages.push(userMessage, assistantMessage);
           queryClient.setQueryData(["/api/messages"], newMessages);
         } else {
           // For API responses, invalidate to refetch
           queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
         }
-        
+
         // Speak the response if voice is enabled
         if (voiceEnabled) {
           speak(data.aiMessage.content);
         }
-        
+
         // Handle follow-up messages if Milla wants to elaborate
         if (data.followUpMessages && data.followUpMessages.length > 0) {
           console.log(`Milla has ${data.followUpMessages.length} follow-up messages to send`);
-          
+
           // Send follow-up messages with natural delays
           data.followUpMessages.forEach((followUpMsg: any, index: number) => {
             setTimeout(() => {
               // Add follow-up to conversation memory
               addExchange("", followUpMsg.content);
-              
+
               // Refresh messages to show the new follow-up
               queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
-              
+
               // Speak follow-up if voice is enabled
               if (voiceEnabled) {
                 speak(followUpMsg.content);
               }
-              
+
               // Keep responding state active during follow-ups
               onAvatarStateChange("responding");
             }, (index + 1) * 2000); // 2-second delays between follow-ups
           });
-          
+
           // Reset to neutral after all follow-ups are sent
           setTimeout(() => {
             onAvatarStateChange("neutral");
@@ -842,8 +842,8 @@ export default function ChatInterface({
           </div>
         ) : (
           messages.map((msg) => (
-            <div 
-              key={msg.id} 
+            <div
+              key={msg.id}
               className="message-fade-in"
               data-testid={`message-${msg.role}-${msg.id}`}
             >
@@ -967,7 +967,7 @@ export default function ChatInterface({
             </div>
             <div className="absolute top-2 right-2 flex space-x-1">
               <Button
-                variant="ghost" 
+                variant="ghost"
                 size="sm"
                 className="p-1 text-white/70 hover:text-white bg-black/50 rounded"
                 onClick={switchCamera}
@@ -977,7 +977,7 @@ export default function ChatInterface({
                 <i className="fas fa-sync text-xs"></i>
               </Button>
               <Button
-                variant="ghost" 
+                variant="ghost"
                 size="sm"
                 className="p-1 text-white/70 hover:text-white bg-black/50 rounded"
                 onClick={capturePhoto}
@@ -987,7 +987,7 @@ export default function ChatInterface({
                 <i className="fas fa-camera text-xs"></i>
               </Button>
               <Button
-                variant="ghost" 
+                variant="ghost"
                 size="sm"
                 className="p-1 text-red-400 hover:text-red-300 bg-black/50 rounded"
                 onClick={stopCamera}
@@ -1016,14 +1016,14 @@ export default function ChatInterface({
                   rows={1}
                   data-testid="input-message"
                 />
-                
+
                 {/* Camera Button */}
                 <Button
-                  variant="ghost" 
+                  variant="ghost"
                   size="sm"
                   className={`absolute right-36 bottom-3 p-2 transition-colors ${
-                    isCameraActive 
-                      ? 'text-green-400' 
+                    isCameraActive
+                      ? 'text-green-400'
                       : 'text-white/60 hover:text-white'
                   }`}
                   onClick={isCameraActive ? stopCamera : startCamera}
@@ -1034,11 +1034,11 @@ export default function ChatInterface({
 
                 {/* Voice Input Button */}
                 <Button
-                  variant="ghost" 
+                  variant="ghost"
                   size="sm"
                   className={`absolute right-24 bottom-3 p-2 transition-colors ${
-                    isListening 
-                      ? 'text-red-400 animate-pulse' 
+                    isListening
+                      ? 'text-red-400 animate-pulse'
                       : 'text-white/60 hover:text-white'
                   }`}
                   onClick={isListening ? stopListening : startListening}
@@ -1046,14 +1046,14 @@ export default function ChatInterface({
                 >
                   <i className={`fas ${isListening ? 'fa-stop' : 'fa-microphone'}`}></i>
                 </Button>
-                
+
                 {/* Video Analysis Button */}
                 <Button
-                  variant="ghost" 
+                  variant="ghost"
                   size="sm"
                   className={`absolute right-10 bottom-3 p-2 transition-colors ${
-                    showVideoAnalyzer 
-                      ? 'text-purple-400' 
+                    showVideoAnalyzer
+                      ? 'text-purple-400'
                       : 'text-white/60 hover:text-white'
                   }`}
                   onClick={() => setShowVideoAnalyzer(!showVideoAnalyzer)}
@@ -1065,7 +1065,7 @@ export default function ChatInterface({
 
                 {/* Attachment Button */}
                 <Button
-                  variant="ghost" 
+                  variant="ghost"
                   size="sm"
                   className="absolute right-3 bottom-3 p-2 text-white/60 hover:text-white transition-colors"
                   data-testid="button-attachment"
@@ -1089,7 +1089,7 @@ export default function ChatInterface({
                   <i className="fas fa-paper-clip"></i>
                 </Button>
               </div>
-              
+
               {/* Send Button */}
               <Button
                 className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 rounded-2xl p-3 text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1100,7 +1100,7 @@ export default function ChatInterface({
                 <i className="fas fa-paper-plane text-lg"></i>
               </Button>
             </div>
-            
+
           </div>
         </div>
 
@@ -1108,14 +1108,14 @@ export default function ChatInterface({
         {showVideoAnalyzer && (
           <div className="bg-black/20 backdrop-blur-sm border-t border-white/10 p-6">
             <div className="max-w-4xl mx-auto">
-              <VideoAnalyzer 
+              <VideoAnalyzer
                 onAnalysisComplete={(result) => {
                   // Add video analysis to the chat
                   const analysisMessage = `🎬 **Video Analysis Complete!**\n\n**Summary:** ${result.summary}\n\n**Milla's Insights:** ${result.insights || "I found your video interesting!"}`;
-                  
+
                   rapidFireSend(analysisMessage);
                   setShowVideoAnalyzer(false);
-                  
+
                   toast({
                     title: "Video Analyzed",
                     description: "Milla has analyzed your video and shared her insights!",

@@ -44,12 +44,12 @@ export async function analyzeVideo(videoBuffer: Buffer, mimeType: string): Promi
           type: "object",
           properties: {
             summary: { type: "string" },
-            keyMoments: { 
+            keyMoments: {
               type: "array",
               items: { type: "string" }
             },
             emotions: {
-              type: "array", 
+              type: "array",
               items: { type: "string" }
             },
             objects: {

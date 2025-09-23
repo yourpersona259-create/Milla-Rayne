@@ -1,159 +1,4 @@
-
-interface Message {
-  id: string;
-  content: string;
-  role: "user" | "assistant";
-  timestamp: string;
-}
-
-interface MessageResponse {
-  userMessage: Message;
-  aiMessage: Message | null;
-  followUpMessages?: Message[];
-  reasoning?: string[];
-}
-
-export default function ChatInterface({ 
-  theme = 'dark', 
-  onAvatarStateChange 
-}: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  const { 
-    addExchange, 
-    getRecentMessages, 
-    extractAndSetUserName, 
-    userName 
-  } = useConversationMemory();
-
-  // Load existing messages on component mount
-  useEffect(() => {
-    loadMessages();
-  }, []);
-
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const loadMessages = async () => {
-    try {
-      const response = await fetch("/api/messages");
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data || []);
-      } else {
-        console.error("Failed to load messages:", response.status);
-      }
-    } catch (error) {
-      console.error("Error loading messages:", error);
-      setError("Failed to load conversation history");
-    }
-  };
-
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-
-    const userMessage = input.trim();
-    setInput("");
-    setIsLoading(true);
-    setError(null);
-    
-    // Extract user name if provided
-    extractAndSetUserName(userMessage);
-
-    // Set avatar to thinking state
-    onAvatarStateChange?.('thinking');
-
-    try {
-      const conversationHistory = getRecentMessages();
-      
-      const response = await fetch("/api/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: userMessage,
-          role: "user",
-          conversationHistory,
-          userName: userName || "Danny Ray"
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: MessageResponse = await response.json();
-      
-      // Update messages with user message and AI response
-      const newMessages: Message[] = [data.userMessage];
-      
-      if (data.aiMessage) {
-        newMessages.push(data.aiMessage);
-        
-        // Add to conversation memory
-        addExchange(data.userMessage.content, data.aiMessage.content);
-        
-        // Set avatar to responding state
-        onAvatarStateChange?.('responding');
-        
-        // Reset to neutral after a delay
-        setTimeout(() => {
-          onAvatarStateChange?.('neutral');
-        }, 3000);
-      }
-      
-      // Add any follow-up messages
-      if (data.followUpMessages?.length) {
-        newMessages.push(...data.followUpMessages);
-        
-        // Add follow-ups to conversation memory
-        data.followUpMessages.forEach(followUp => {
-          addExchange("", followUp.content);
-        });
-      }
-      
-      setMessages(prev => [...prev, ...newMessages]);
-      
-    } catch (error) {
-      console.error("Error sending message:", error);
-      setError("Failed to send message. Please try again.");
-      onAvatarStateChange?.('neutral');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const getMessageBubbleClass = (role: "user" | "assistant") => {
-    const baseClass = "max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-sm";
-    
-    if (role === "user") {
-      return `${baseClass} ${theme === 'light' 
-        ? 'bg-blue-500 text-white ml-auto' 
-        : 'bg-blue-600 text-white ml-auto'
-      }`;
-    } else {
-      return `${baseClass} ${theme === 'light'
-        ? 'bg-gray-100 text-gray-800 mr-auto'
-        : 'bg-gray-700 text-gray-100 mr-auto'
-      }`;
+// client/src/components/ChatInterface.tsx
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -161,33 +6,15 @@ import { Card } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { checkIdentityQuery, MILLA_IDENTITY } from "@/lib/MillaCore";
+import MillaCore, { checkIdentityQuery, MILLA_IDENTITY } from "@/lib/MillaCore";
 import type { Message } from "@shared/schema";
 import { AvatarState } from "@/components/Sidebar";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { useConversationMemory } from "@/contexts/ConversationContext";
 import { formatTimeCST } from "@/lib/timeUtils";
-import VideoAnalyzer from "@/components/VideoViewer";
-// React Icons imports
-import { 
-  FaPaperPlane, 
-  FaMicrophone, 
-  FaStop, 
-  FaVideo, 
-  FaVideoSlash, 
-  FaPaperclip, 
-  FaCamera, 
-  FaSync, 
-  FaTimes, 
-  FaClock, 
-  FaBrain, 
-  FaLightbulb, 
-  FaShieldAlt, 
-  FaSmile,
-  FaRobot,
-  FaUser
-} from "react-icons/fa";
+import VideoAnalyzer from "@/components/VideoAnalyzer";
+import { MemoryService } from "@/lib/MillaCore";
 
 // Component to handle image loading with fallback for failed loads
 interface ImageWithFallbackProps {
@@ -227,12 +54,6 @@ const ImageWithFallback = ({ imageUrl, altText }: ImageWithFallbackProps) => {
   );
 };
 
-interface VideoAnalysisResult {
-  bbox: [number, number, number, number];
-  class: string;
-  score: number;
-}
-
 interface ChatInterfaceProps {
   onAvatarStateChange: (state: AvatarState) => void;
   onSpeakingStateChange?: (isSpeaking: boolean) => void;
@@ -243,7 +64,6 @@ interface ChatInterfaceProps {
   selectedVoice?: SpeechSynthesisVoice | null;
   theme?: 'light' | 'dark';
   chatTransparency?: number;
-  videoAnalysisResults?: VideoAnalysisResult[];
   personalitySettings?: {
     communicationStyle: 'adaptive' | 'formal' | 'casual' | 'friendly';
     formalityLevel: 'formal' | 'balanced' | 'casual';
@@ -262,7 +82,6 @@ export default function ChatInterface({
   selectedVoice = null,
   theme = 'dark',
   chatTransparency = 80,
-  videoAnalysisResults,
   personalitySettings
 }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
@@ -508,7 +327,23 @@ export default function ChatInterface({
       });
     }
   };
-
+  
+  // --- NEW CODE: Memory Service Integration ---
+  
+  const [allMemories, setAllMemories] = useState<string>('');
+  
+  // Function to load memories when the component mounts
+  const loadMemories = async () => {
+    const memories = await MillaCore.MemoryService.getMemories();
+    setAllMemories(memories);
+  };
+  
+  // Use a separate function to save the conversation
+  const saveConversationToMemory = async (userMessage: string, aiMessage: string) => {
+    const memory = `[${formatTimeCST(new Date())}] You: ${userMessage}\n[${formatTimeCST(new Date())}] Milla: ${aiMessage}\n`;
+    await MillaCore.MemoryService.saveMemory(memory);
+  };
+  
   const sendMessageWithImage = async (messageContent: string, imageData: string) => {
     onAvatarStateChange("thinking");
     
@@ -534,10 +369,11 @@ export default function ChatInterface({
     setIsTyping(false);
     onAvatarStateChange("responding");
     
-    // Add to conversation memory
+    // Save the conversation to memory
     if (data.userMessage && data.aiMessage) {
-      addExchange(data.userMessage.content, data.aiMessage.content);
-      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+        saveConversationToMemory(data.userMessage.content, data.aiMessage.content);
+        addExchange(data.userMessage.content, data.aiMessage.content);
+        queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
     }
     
     // Speak the response if voice is enabled
@@ -607,6 +443,11 @@ export default function ChatInterface({
   useEffect(() => {
     onSpeakingStateChange?.(isSpeaking);
   }, [isSpeaking, onSpeakingStateChange]);
+  
+  // Load memories on component mount
+  useEffect(() => {
+    loadMemories();
+  }, []);
 
   // Proactive engagement and break reminders check - DISABLED for performance
   // useEffect(() => {
@@ -717,23 +558,14 @@ export default function ChatInterface({
     return null;
   };
 
-  // Fetch messages with balanced caching to reduce API calls while preventing stale data
+  // Fetch messages
   const { data: messages = [], isLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages"],
-    staleTime: 2 * 60 * 1000, // 2 minutes - shorter to prevent stale/duplicate messages
-    gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache for 5 minutes (formerly cacheTime)
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-    refetchOnMount: true, // Allow refetch on mount for fresh data
-    refetchOnReconnect: false, // Don't refetch on reconnect
-    refetchInterval: false, // No automatic refetch interval
-    retry: 2, // Limit retries to reduce redundant requests
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
   // Show introduction message if no messages exist and haven't shown it yet
   useEffect(() => {
-    const messagesArray = messages as Message[];
-    if (messagesArray && messagesArray.length === 0 && !hasShownIntroduction) {
+    if (messages && messages.length === 0 && !hasShownIntroduction) {
       setHasShownIntroduction(true);
       // Add introduction message to the conversation
       setTimeout(() => {
@@ -784,13 +616,19 @@ export default function ChatInterface({
         role: "user",
         userId: null,
         conversationHistory: recentMessages,
-        userName: userName // Send current known user name
+        userName: userName, // Send current known user name
+        memories: allMemories // NEW: Send all memories for context
       });
       return response.json();
     },
     onSuccess: (data) => {
       setMessage("");
       setIsTyping(false);
+      
+      // Save the conversation to memory
+      if (data.userMessage && data.aiMessage) {
+        saveConversationToMemory(data.userMessage.content, data.aiMessage.content);
+      }
       
       // Display actual reasoning steps from server if available
       if (data.reasoning && data.reasoning.length > 0) {
@@ -889,8 +727,7 @@ export default function ChatInterface({
         onAvatarStateChange("neutral");
       }
     },
-    onError: (error) => {
-      console.error("Send message mutation error:", error);
+    onError: () => {
       setIsTyping(false);
       onAvatarStateChange("neutral"); // Back to neutral on error
       toast({
@@ -925,7 +762,8 @@ export default function ChatInterface({
         role: "user",
         userId: null,
         conversationHistory: recentMessages,
-        userName: userName
+        userName: userName,
+        memories: allMemories // NEW: Add memories for context
       });
       
       // Invalidate messages to refresh the list
@@ -948,6 +786,7 @@ export default function ChatInterface({
         // Use normal mutation for regular messages
         setIsTyping(true);
         setUserIsTyping(false);
+        onAvatarStateChange("responding");
         sendMessageMutation.mutate(message.trim());
       }
     }
@@ -969,7 +808,6 @@ export default function ChatInterface({
     } else if (value.length === 0 && userIsTyping) {
       setUserIsTyping(false);
       // onAvatarStateChange("neutral"); // DISABLED for performance - no visual changes during typing
-
     }
   };
 
@@ -992,157 +830,302 @@ export default function ChatInterface({
     }
   };
 
-  // Filter messages to show only the most recent one (requirement 1)
-  const recentMessage = messages && messages.length > 0 ? [messages[messages.length - 1]] : [];
+  
 
   return (
-
-    <div className="flex flex-col h-full bg-gradient-to-b from-black/10 to-black/20">
-      {/* Chat Messages Area */}
-      <div 
-        className="flex-1 overflow-y-auto px-6 py-8 chat-scroll"
-        style={{ maxHeight: "calc(100vh - 120px)" }}
-      >
-        <div className="space-y-6">
-          {messages.map((msg) => (
-            <div key={msg.id} className="message-fade-in">
+    <main className="flex-1 flex flex-col h-full" data-testid="chat-interface">
+      {/* Conversation Display Area */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scroll-smooth" data-testid="messages-container">
+        {isLoading ? (
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          messages.map((msg) => (
+            <div 
+              key={msg.id} 
+              className="message-fade-in"
+              data-testid={`message-${msg.role}-${msg.id}`}
+            >
               {msg.role === "assistant" ? (
-                // Milla's message - large purple bubble on right with enhanced styling
-                <div className="flex justify-end mb-8">
-                  <div className="max-w-[92%] min-w-[200px]">
-                    <div className="text-xs text-purple-200 mb-2 text-right font-semibold tracking-wider uppercase flex items-center justify-end">
-                      <span className="mr-2">✨ Milla</span>
-                      <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                        <span className="text-white text-xs">🤖</span>
-                      </div>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-1 bg-transparent rounded-2xl rounded-tl-sm px-4 py-3 max-w-3xl">
+                    <div className="text-pink-300 leading-relaxed whitespace-pre-wrap">
+                      {renderMessageContent(msg.content)}
                     </div>
-                    <div 
-                      className="bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white rounded-3xl px-8 py-6 shadow-2xl glass-chat-bubble relative transform hover:scale-[1.02] transition-all duration-300 chat-bubble-hover"
-                      style={{
-                        borderTopRightRadius: "12px",
-                        boxShadow: "0 10px 40px rgba(147, 51, 234, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                        border: "1px solid rgba(147, 51, 234, 0.3)"
-                      }}
-                    >
-                      <div className="text-base leading-relaxed font-medium">
-                        {msg.content}
-                      </div>
-                      {/* Enhanced purple glow effect */}
-                      <div className="absolute -inset-2 bg-gradient-to-br from-purple-400 to-purple-600 rounded-3xl blur-lg opacity-25 -z-10 animate-pulse"></div>
+                    <div className="mt-3 text-xs text-pink-300/70">
+                      <i className="fas fa-clock mr-1"></i>
+                      {formatTimeCST(msg.timestamp)}
                     </div>
                   </div>
                 </div>
               ) : (
-                // User's message - blue bubble below, left-aligned with enhanced styling  
-                <div className="flex justify-start mb-6">
-                  <div className="max-w-[82%] min-w-[160px]">
-                    <div className="text-xs text-blue-200 mb-2 font-semibold tracking-wider uppercase flex items-center">
-                      <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-md mr-2">
-                        <span className="text-white text-xs">👤</span>
-                      </div>
-                      <span>You</span>
+                <div className="flex items-start space-x-4 justify-end">
+                  <div className="flex-1 bg-transparent rounded-2xl rounded-tr-sm px-4 py-3 max-w-2xl">
+                    <div className="text-blue-300 leading-relaxed whitespace-pre-wrap">
+                      {renderMessageContent(msg.content)}
                     </div>
-                    <div 
-                      className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-3xl px-6 py-4 shadow-xl relative transform hover:scale-[1.02] transition-all duration-300 chat-bubble-hover"
-                      style={{
-                        borderTopLeftRadius: "12px",
-                        boxShadow: "0 8px 28px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                        border: "1px solid rgba(59, 130, 246, 0.3)"
-                      }}
-                    >
-                      <div className="text-sm leading-relaxed">
-                        {msg.content}
-                      </div>
-                      {/* Enhanced blue glow effect */}
-                      <div className="absolute -inset-1 bg-gradient-to-br from-blue-400 to-blue-600 rounded-3xl blur opacity-20 -z-10"></div>
+                    <div className="mt-3 text-xs text-blue-300/70 text-right">
+                      <i className="fas fa-clock mr-1"></i>
+                      {formatTimeCST(msg.timestamp)}
                     </div>
+                  </div>
+                  <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <i className="fas fa-user text-blue-300 text-xs"></i>
                   </div>
                 </div>
               )}
             </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-end mb-8">
-              <div className="max-w-[90%] min-w-[200px]">
-                <div className="text-xs text-purple-200 mb-2 text-right font-semibold tracking-wide uppercase">
-                  ✨ Milla
+          ))
+        )}
+
+          {/* Typing Indicator */}
+          {showThinking && (
+            <div className="thinking-animation" data-testid="thinking-indicator">
+              <div className="flex items-start space-x-4">
+                <div className="w-10 h-10 bg-pink-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <i className="fas fa-brain text-pink-300 text-sm animate-pulse"></i>
                 </div>
-                <div 
-                  className="bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white rounded-3xl px-8 py-6 shadow-2xl glass-chat-bubble relative"
-                  style={{
-                    borderTopRightRadius: "12px",
-                    boxShadow: "0 8px 32px rgba(147, 51, 234, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                    border: "1px solid rgba(147, 51, 234, 0.2)"
-                  }}
-                >
-                  <div className="text-base leading-relaxed font-medium flex items-center">
-                    <div className="flex space-x-2 mr-3">
-                      <div className="w-2 h-2 bg-white/80 rounded-full animate-pulse"></div>
-                      <div className="w-2 h-2 bg-white/80 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                      <div className="w-2 h-2 bg-white/80 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
-                    </div>
-                    Thinking...
+                <Card className="bg-pink-500/5 border border-pink-300/20 rounded-xl px-4 py-3 max-w-3xl">
+                  <div className="text-sm text-pink-300/80 mb-2">
+                    <i className="fas fa-lightbulb mr-2"></i>
+                    <span className="font-medium">Thinking...</span>
                   </div>
-                  <div className="absolute -inset-1 bg-gradient-to-br from-purple-400 to-purple-600 rounded-3xl blur opacity-20 -z-10"></div>
-                </div>
+                  <div className="space-y-2">
+                    {thinkingSteps.map((step, index) => (
+                      <div key={index} className="flex items-start space-x-2 text-sm text-pink-300/70">
+                        <div className="w-1.5 h-1.5 bg-pink-300/50 rounded-full mt-2 flex-shrink-0"></div>
+                        <span className="leading-relaxed">{step}</span>
+                      </div>
+                    ))}
+                    <div className="flex space-x-1 mt-3">
+                      <div className="w-1.5 h-1.5 bg-pink-300/60 rounded-full animate-pulse"></div>
+                      <div className="w-1.5 h-1.5 bg-pink-300/60 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                      <div className="w-1.5 h-1.5 bg-pink-300/60 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                    </div>
+                  </div>
+                </Card>
               </div>
             </div>
           )}
+          
+          {isTyping && !showThinking && (
+            <div className="typing-animation" data-testid="typing-indicator">
+              <div className="flex items-start space-x-4">
+                <Card className="bg-transparent border-none rounded-2xl rounded-tl-sm px-4 py-3">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-pink-300/60 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-pink-300/60 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                    <div className="w-2 h-2 bg-pink-300/60 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
         </div>
-      </div>
 
-
-        {/* Error Display */}
-        {error && (
-          <div className="flex-shrink-0 px-4 py-2 bg-red-500/20 border-t border-red-400/30 backdrop-blur-sm">
-            <div className="text-red-300 text-sm flex items-center">
-              <i className="fas fa-exclamation-triangle mr-2"></i>
-              {error}
+        {/* Camera Preview */}
+        {isCameraActive && (
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 w-80 h-60 bg-gray-900 border-2 border-green-400 rounded-lg overflow-hidden backdrop-blur-sm z-50 shadow-lg">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover bg-gray-800"
+              style={{ transform: 'scaleX(-1)' }} // Mirror the video like a selfie
+              onCanPlay={() => {
+                console.log("Video can play");
+                if (videoRef.current) {
+                  videoRef.current.play().catch(e => console.error("Auto-play failed:", e));
+                }
+              }}
+              onError={(e) => {
+                console.error("Video element error:", e);
+              }}
+            />
+            {/* Enhanced Status indicators */}
+            <div className="absolute top-2 left-2 space-y-1">
+              <div className="flex items-center space-x-1 bg-black/50 rounded px-2 py-1">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-green-400 text-xs">LIVE</span>
+              </div>
+              {isAnalyzingVideo && (
+                <div className="flex items-center space-x-1 bg-black/50 rounded px-2 py-1">
+                  <i className="fas fa-brain text-xs text-blue-400"></i>
+                  <span className="text-blue-400 text-xs">AI Vision</span>
+                </div>
+              )}
+              {currentEmotion !== "neutral" && (
+                <div className="flex items-center space-x-1 bg-black/50 rounded px-2 py-1">
+                  <i className="fas fa-smile text-xs text-yellow-400"></i>
+                  <span className="text-yellow-400 text-xs capitalize">{currentEmotion}</span>
+                </div>
+              )}
+            </div>
+            <div className="absolute top-2 right-2 flex space-x-1">
+              <Button
+                variant="ghost" 
+                size="sm"
+                className="p-1 text-white/70 hover:text-white bg-black/50 rounded"
+                onClick={switchCamera}
+                data-testid="button-switch-camera"
+                title="Switch camera (front/back)"
+              >
+                <i className="fas fa-sync text-xs"></i>
+              </Button>
+              <Button
+                variant="ghost" 
+                size="sm"
+                className="p-1 text-white/70 hover:text-white bg-black/50 rounded"
+                onClick={capturePhoto}
+                data-testid="button-capture"
+                title="Capture photo for Milla"
+              >
+                <i className="fas fa-camera text-xs"></i>
+              </Button>
+              <Button
+                variant="ghost" 
+                size="sm"
+                className="p-1 text-red-400 hover:text-red-300 bg-black/50 rounded"
+                onClick={stopCamera}
+                data-testid="button-close-camera"
+                title="Stop camera"
+              >
+                <i className="fas fa-times text-xs"></i>
+              </Button>
             </div>
           </div>
         )}
 
-        {/* Input Area */}
-        <div className="flex-shrink-0 p-4 border-t border-white/10 bg-black/20 backdrop-blur-sm">
-          <div className="flex space-x-2">
-            <div className="flex-1 relative">
-              <Textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                className="resize-none bg-white/10 border-white/20 text-white placeholder-white/50 rounded-xl backdrop-blur-sm focus:border-pink-400/50 focus:ring-pink-400/25 min-h-[40px] max-h-32 transition-all duration-200"
-                rows={1}
-                disabled={isLoading}
-                style={{
-                  height: 'auto',
-                  minHeight: '40px',
-                  maxHeight: '128px'
-                }}
-              />
+        {/* Chat Input Area */}
+        <div className="bg-transparent p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="relative">
+            <div className="flex items-end space-x-4">
+              <div className="flex-1 relative">
+                <Textarea
+                  ref={textareaRef}
+                  placeholder="Type your message to Milla..."
+                  className="w-full bg-transparent border-none rounded-2xl px-4 py-3 pr-44 text-white placeholder:text-white/60 resize-none min-h-[3rem] max-h-32 focus:outline-none focus:ring-0 focus:border-transparent transition-all"
+                  value={message}
+                  onChange={(e) => handleInputChange(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  rows={1}
+                  data-testid="input-message"
+                />
+                
+                {/* Camera Button */}
+                <Button
+                  variant="ghost" 
+                  size="sm"
+                  className={`absolute right-36 bottom-3 p-2 transition-colors ${
+                    isCameraActive 
+                      ? 'text-green-400' 
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                  onClick={isCameraActive ? stopCamera : startCamera}
+                  data-testid="button-camera"
+                >
+                  <i className={`fas ${isCameraActive ? 'fa-video' : 'fa-video-slash'}`}></i>
+                </Button>
+
+                {/* Voice Input Button */}
+                <Button
+                  variant="ghost" 
+                  size="sm"
+                  className={`absolute right-24 bottom-3 p-2 transition-colors ${
+                    isListening 
+                      ? 'text-red-400 animate-pulse' 
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                  onClick={isListening ? stopListening : startListening}
+                  data-testid="button-voice"
+                >
+                  <i className={`fas ${isListening ? 'fa-stop' : 'fa-microphone'}`}></i>
+                </Button>
+                
+                {/* Video Analysis Button */}
+                <Button
+                  variant="ghost" 
+                  size="sm"
+                  className={`absolute right-10 bottom-3 p-2 transition-colors ${
+                    showVideoAnalyzer 
+                      ? 'text-purple-400' 
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                  onClick={() => setShowVideoAnalyzer(!showVideoAnalyzer)}
+                  data-testid="button-video-analysis"
+                  title="Video Analysis"
+                >
+                  <i className="fas fa-video"></i>
+                </Button>
+
+                {/* Attachment Button */}
+                <Button
+                  variant="ghost" 
+                  size="sm"
+                  className="absolute right-3 bottom-3 p-2 text-white/60 hover:text-white transition-colors"
+                  data-testid="button-attachment"
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*,video/*,audio/*,.pdf,.txt,.doc,.docx';
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (file) {
+                        toast({
+                          title: "File Upload",
+                          description: `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
+                        });
+                        // TODO: Implement file upload functionality
+                      }
+                    };
+                    input.click();
+                  }}
+                >
+                  <i className="fas fa-paper-clip"></i>
+                </Button>
+              </div>
+              
+              {/* Send Button */}
+              <Button
+                className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 rounded-2xl p-3 text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleSendMessage}
+                disabled={!message.trim()}
+                data-testid="button-send"
+              >
+                <i className="fas fa-paper-plane text-lg"></i>
+              </Button>
             </div>
-            <Button
-              onClick={handleSendMessage}
-              disabled={!input.trim() || isLoading}
-              className="bg-gradient-to-r from-pink-500/80 to-purple-500/80 hover:from-pink-500 hover:to-purple-500 text-white border-pink-400/30 backdrop-blur-sm rounded-xl px-4 py-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed chat-button"
-              size={isMobile ? "sm" : "default"}
-            >
-              {isLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  {!isMobile && <span className="text-sm">Sending...</span>}
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <i className="fas fa-paper-plane text-sm"></i>
-                  {!isMobile && <span className="text-sm">Send</span>}
-                </div>
-              )}
-            </Button>
+            
           </div>
         </div>
 
+        {/* Video Analyzer */}
+        {showVideoAnalyzer && (
+          <div className="bg-black/20 backdrop-blur-sm border-t border-white/10 p-6">
+            <div className="max-w-4xl mx-auto">
+              <VideoAnalyzer 
+                onAnalysisComplete={(result) => {
+                  // Add video analysis to the chat
+                  const analysisMessage = `🎬 **Video Analysis Complete!**\n\n**Summary:** ${result.summary}\n\n**Milla's Insights:** ${result.insights || "I found your video interesting!"}`;
+                  
+                  rapidFireSend(analysisMessage);
+                  setShowVideoAnalyzer(false);
+                  
+                  toast({
+                    title: "Video Analyzed",
+                    description: "Milla has analyzed your video and shared her insights!",
+                  });
+                }}
+                className="max-w-2xl"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

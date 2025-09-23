@@ -1,7 +1,7 @@
 // server/personalTaskService.ts
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
-import { MemoryService } from './memoryService';
+import { MemoryService } from './memoryService'; // Import the new MemoryService
 
 const TASKS_FILE_PATH = path.join(__dirname, '..', 'memory', 'personal_tasks.json');
 

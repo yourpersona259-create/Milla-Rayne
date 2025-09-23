@@ -327,21 +327,21 @@ export default function ChatInterface({
       });
     }
   };
-  
+
   // --- NEW CODE: Memory Service Integration ---
-  
+
   const [allMemories, setAllMemories] = useState<string>('');
-  
+
   // Function to load memories when the component mounts
   const loadMemories = async () => {
-    const memories = await MemoryService.getMemories();
+    const memories = await MillaCore.MemoryService.getMemories();
     setAllMemories(memories);
   };
-  
+
   // Use a separate function to save the conversation
   const saveConversationToMemory = async (userMessage: string, aiMessage: string) => {
     const memory = `[${formatTimeCST(new Date())}] You: ${userMessage}\n[${formatTimeCST(new Date())}] Milla: ${aiMessage}\n`;
-    await MemoryService.saveMemory(memory);
+    await MillaCore.MemoryService.saveMemory(memory);
   };
 
   const sendMessageWithImage = async (messageContent: string, imageData: string) => {
@@ -349,10 +349,10 @@ export default function ChatInterface({
 
     // Extract user name if provided in this message
     extractAndSetUserName(messageContent);
-    
+
     // Include conversation context for AI to reference (last 4 messages)
     const recentMessages = getRecentMessages();
-    
+
     const response = await apiRequest("POST", "/api/messages", {
       content: messageContent,
       role: "user",
@@ -363,12 +363,12 @@ export default function ChatInterface({
     });
 
     const data = await response.json();
-    
+
     // Handle success
     setMessage("");
     setIsTyping(false);
     onAvatarStateChange("responding");
-    
+
     // Save the conversation to memory
     if (data.userMessage && data.aiMessage) {
         saveConversationToMemory(data.userMessage.content, data.aiMessage.content);
@@ -842,8 +842,8 @@ export default function ChatInterface({
           </div>
         ) : (
           messages.map((msg) => (
-            <div
-              key={msg.id}
+            <div 
+              key={msg.id} 
               className="message-fade-in"
               data-testid={`message-${msg.role}-${msg.id}`}
             >
@@ -967,7 +967,7 @@ export default function ChatInterface({
             </div>
             <div className="absolute top-2 right-2 flex space-x-1">
               <Button
-                variant="ghost"
+                variant="ghost" 
                 size="sm"
                 className="p-1 text-white/70 hover:text-white bg-black/50 rounded"
                 onClick={switchCamera}
@@ -977,7 +977,7 @@ export default function ChatInterface({
                 <i className="fas fa-sync text-xs"></i>
               </Button>
               <Button
-                variant="ghost"
+                variant="ghost" 
                 size="sm"
                 className="p-1 text-white/70 hover:text-white bg-black/50 rounded"
                 onClick={capturePhoto}
@@ -987,7 +987,7 @@ export default function ChatInterface({
                 <i className="fas fa-camera text-xs"></i>
               </Button>
               <Button
-                variant="ghost"
+                variant="ghost" 
                 size="sm"
                 className="p-1 text-red-400 hover:text-red-300 bg-black/50 rounded"
                 onClick={stopCamera}
@@ -1016,14 +1016,14 @@ export default function ChatInterface({
                   rows={1}
                   data-testid="input-message"
                 />
-
+                
                 {/* Camera Button */}
                 <Button
-                  variant="ghost"
+                  variant="ghost" 
                   size="sm"
                   className={`absolute right-36 bottom-3 p-2 transition-colors ${
-                    isCameraActive
-                      ? 'text-green-400'
+                    isCameraActive 
+                      ? 'text-green-400' 
                       : 'text-white/60 hover:text-white'
                   }`}
                   onClick={isCameraActive ? stopCamera : startCamera}
@@ -1034,11 +1034,11 @@ export default function ChatInterface({
 
                 {/* Voice Input Button */}
                 <Button
-                  variant="ghost"
+                  variant="ghost" 
                   size="sm"
                   className={`absolute right-24 bottom-3 p-2 transition-colors ${
-                    isListening
-                      ? 'text-red-400 animate-pulse'
+                    isListening 
+                      ? 'text-red-400 animate-pulse' 
                       : 'text-white/60 hover:text-white'
                   }`}
                   onClick={isListening ? stopListening : startListening}
@@ -1046,14 +1046,14 @@ export default function ChatInterface({
                 >
                   <i className={`fas ${isListening ? 'fa-stop' : 'fa-microphone'}`}></i>
                 </Button>
-
+                
                 {/* Video Analysis Button */}
                 <Button
-                  variant="ghost"
+                  variant="ghost" 
                   size="sm"
                   className={`absolute right-10 bottom-3 p-2 transition-colors ${
-                    showVideoAnalyzer
-                      ? 'text-purple-400'
+                    showVideoAnalyzer 
+                      ? 'text-purple-400' 
                       : 'text-white/60 hover:text-white'
                   }`}
                   onClick={() => setShowVideoAnalyzer(!showVideoAnalyzer)}
@@ -1065,7 +1065,7 @@ export default function ChatInterface({
 
                 {/* Attachment Button */}
                 <Button
-                  variant="ghost"
+                  variant="ghost" 
                   size="sm"
                   className="absolute right-3 bottom-3 p-2 text-white/60 hover:text-white transition-colors"
                   data-testid="button-attachment"
@@ -1089,7 +1089,7 @@ export default function ChatInterface({
                   <i className="fas fa-paper-clip"></i>
                 </Button>
               </div>
-
+              
               {/* Send Button */}
               <Button
                 className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 rounded-2xl p-3 text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1100,7 +1100,7 @@ export default function ChatInterface({
                 <i className="fas fa-paper-plane text-lg"></i>
               </Button>
             </div>
-
+            
           </div>
         </div>
 
@@ -1108,14 +1108,14 @@ export default function ChatInterface({
         {showVideoAnalyzer && (
           <div className="bg-black/20 backdrop-blur-sm border-t border-white/10 p-6">
             <div className="max-w-4xl mx-auto">
-              <VideoAnalyzer
+              <VideoAnalyzer 
                 onAnalysisComplete={(result) => {
                   // Add video analysis to the chat
                   const analysisMessage = `🎬 **Video Analysis Complete!**\n\n**Summary:** ${result.summary}\n\n**Milla's Insights:** ${result.insights || "I found your video interesting!"}`;
-
+                  
                   rapidFireSend(analysisMessage);
                   setShowVideoAnalyzer(false);
-
+                  
                   toast({
                     title: "Video Analyzed",
                     description: "Milla has analyzed your video and shared her insights!",

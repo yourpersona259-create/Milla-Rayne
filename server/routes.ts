@@ -1,12 +1,13 @@
 import { Router } from 'express';
-import { saveMemory, getMemories } from './memoryService';
+import { MemorySearchResult, MemoryCoreData } from './memoryService';
 import { getGeminiResponse, generateVideoInsights } from './gemini';
 import { getEmotionAnalysis } from './visualRecognitionService';
 import { processUserActivity } from './proactiveService';
 import { getTasks, createTask } from './personalTaskService';
 import { log } from "./vite";
 import { storeImage } from './fileStorage';
-import { MillaCore } from './MillaCore';
+import { ResponseContext } from "./MillaCore"
+import { saveMemory } from './memorySync';
 
 const router = Router();
 

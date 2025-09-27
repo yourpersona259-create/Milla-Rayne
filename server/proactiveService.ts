@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import path from 'path';
 
 // This is where Milla's user activity will be stored
-const USER_ACTIVITY_FILE_PATH = path.join(__dirname, '..', 'memory', 'user_activity.json');
+const USER_ACTIVITY_FILE_PATH = path.join( '..', 'memory', 'user_activity.json');
 
 // Ensure the memory directory exists
 const ensureMemoryDirExists = () => {

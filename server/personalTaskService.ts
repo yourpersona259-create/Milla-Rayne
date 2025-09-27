@@ -1,9 +1,9 @@
 // server/personalTaskService.ts
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
-import { MemoryService } from './memoryService'; // Import the new MemoryService
+import { memoryService } from './memoryService'; // Import the new MemoryService
 
-const TASKS_FILE_PATH = path.join(__dirname, '..', 'memory', 'personal_tasks.json');
+const TASKS_FILE_PATH = path.join( '..', 'memory', 'personal_tasks.json');
 
 // Ensure the memory directory exists
 const ensureMemoryDirExists = () => {
@@ -51,7 +51,7 @@ export const createTask = async (taskContent: string): Promise<PersonalTask> => 
   
   // Also save a memory of this task being created
   const memoryEntry = `You created a new task: "${taskContent}"`;
-  await MemoryService.saveMemory(memoryEntry);
+  await memoryEntry.(memoryEntry);
   
   return newTask;
 };

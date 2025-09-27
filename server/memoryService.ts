@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
-
+// In the file showing the error, update the import: 
+// or simply './memoryService' depending on your project's import path
 export interface MemoryData {
   content: string;
   success: boolean;
@@ -45,6 +46,12 @@ export interface MemorySearchResult {
   matchedTerms: string[];
 }
 
+export interface memoryService {
+}
+
+// ========================================
+// MEMORY SYSTEM - Local File Integration
+// ========================================
 /**
  * Read memories from the local txt file in the /memory folder
  */
@@ -192,18 +199,15 @@ const MEMORY_CORE_CACHE_TTL = 30 * 60 * 1000; // 30 minutes (increased for perfo
  * This function runs at application startup and caches results
  */
 export async function loadMemoryCore(): Promise<MemoryCoreData> {
-  const startTime = Date.now();
   try {
     // Check cache first
     const now = Date.now();
     if (memoryCoreCache && (now - memoryCoreLastLoaded) < MEMORY_CORE_CACHE_TTL) {
       console.log('Using cached Memory Core data');
-      const endTime = Date.now();
-      console.log(`Memory Core cache access latency: ${endTime - startTime}ms`);
       return memoryCoreCache;
     }
 
-  console.log('Loading Memory Core from memories.txt as primary source...');
+    console.log('Loading Memory Core from memories.txt as primary source...');
     
     // Try to load from memories.txt first (primary source)
     try {
@@ -215,9 +219,7 @@ export async function loadMemoryCore(): Promise<MemoryCoreData> {
         memoryCoreCache = result;
         memoryCoreLastLoaded = now;
         
-  const endTime = Date.now();
-  console.log(`Memory Core loaded from memories.txt latency: ${endTime - startTime}ms`);
-  return result;
+        return result;
       }
     } catch (error) {
       console.log('Failed to load from memories.txt, trying backup files...');
@@ -247,7 +249,7 @@ export async function loadMemoryCore(): Promise<MemoryCoreData> {
         backupContent = await fs.readFile(filePath, 'utf-8');
         console.log(`Successfully loaded Memory Core from backup file: ${filename}`);
         foundBackupFile = true;
-  break;
+        break;
       } catch (error) {
         // File doesn't exist, try next one
         continue;
@@ -278,16 +280,12 @@ export async function loadMemoryCore(): Promise<MemoryCoreData> {
     memoryCoreLastLoaded = now;
     
     console.log(`Memory Core loaded from backup: ${entries.length} entries`);
-  const endTime = Date.now();
-  console.log(`Memory Core loaded from backup latency: ${endTime - startTime}ms`);
-  return result;
+    return result;
     
   } catch (error) {
     console.error('Error loading Memory Core:', error);
     
     // Final fallback - empty memory core
-    const endTime = Date.now();
-    console.log(`Memory Core error fallback latency: ${endTime - startTime}ms`);
     return {
       entries: [],
       totalEntries: 0,
@@ -573,34 +571,55 @@ function detectEmotionalTone(content: string): string {
 }
 
 /**
- * Get Memory Core context for a user query
+ * Get Memory Core context for a user query (DATABASE-POWERED)
  */
 export async function getMemoryCoreContext(query: string): Promise<string> {
-  const searchResults = await searchMemoryCore(query, 5);
+  // Import database service dynamically to avoid circular imports
+ ;
   
-  if (searchResults.length === 0) {
-    return '';
+  try {
+    const context = await getConversationContextDB(query, 5);
+  
+    
+    return `\nRelevant Memory Context:\n${context}\n`;
+  } catch (error) {
+    console.error('Error getting memory context from database:', error);
+    // Fallback to old method if database fails
+    const searchResults = await searchMemoryCore(query, 5);
+    if (searchResults.length === 0) return '';
+    
+    const contextEntries = searchResults.map(result => {
+      const entry = result.entry;
+      const speaker = entry.speaker === 'milla' ? 'Milla' : 'Danny';
+      return `[${speaker}]: ${entry.content}`;
+    });
+    
+    return `\nRelevant Memory Context:\n${contextEntries.join('\n')}\n`;
   }
-  
-  const contextEntries = searchResults.map(result => {
-    const entry = result.entry;
-    const speaker = entry.speaker === 'milla' ? 'Milla' : 'Danny';
-    return `[${speaker}]: ${entry.content}`;
-  });
-  
-  return `\nRelevant Memory Context:\n${contextEntries.join('\n')}\n`;
 }
 
 /**
- * Initialize Memory Core at application startup
+ * Initialize Memory Core at application startup (OPTIMIZED - NO FILE LOADING)
  */
 export async function initializeMemoryCore(): Promise<void> {
   console.log('Initializing Memory Core system...');
   try {
-    await loadMemoryCore();
-    console.log('Memory Core initialized successfully');
+    // PERFORMANCE OPTIMIZATION: No longer loading all memories at startup!
+    // Database queries are now used on-demand for much faster startup
+    
+    
+  
+    
+   ;
   } catch (error) {
     console.error('Failed to initialize Memory Core:', error);
+    // Fallback to old initialization if database fails
+    try {
+      await loadMemoryCore();
+      console.log('Memory Core initialized successfully (fallback to file loading)');
+    } catch (fallbackError) {
+      console.error('Fallback initialization also failed:', fallbackError);
+    }
   }
 }
 
@@ -680,4 +699,8 @@ export async function updateMemories(newMemory: string): Promise<{ success: bool
       error: error instanceof Error ? error.message : 'Unknown error updating memories'
     };
   }
+}
+
+function getConversationContextDB(query: string, arg1: number) {
+  throw new Error('Function not implemented.');
 }

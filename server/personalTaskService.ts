@@ -1,11 +1,13 @@
-// server/personalTaskService.ts
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import { memoryService } from './memoryService'; // Import the new MemoryService
+
 async function saveMemory(memory: string) {
   console.log("Saving memory:", memory);
+  // You can add saving logic here later, e.g., write to a file or DB
+}
 
-const TASKS_FILE_PATH = path.join( '..', 'memory', 'personal_tasks.json');
+const TASKS_FILE_PATH = path.join('..', 'memory', 'personal_tasks.json');
 
 // Ensure the memory directory exists
 const ensureMemoryDirExists = () => {
@@ -74,8 +76,8 @@ export const getTasks = (): PersonalTask[] => {
  * Deletes a personal task by its ID.
  * @param id The ID of the task to delete.
  */
-  export const deleteTask = (id: string): void => {
+export const deleteTask = (id: string): void => {
   const tasks = getTasks();
   const updatedTasks = tasks.filter(task => task.id !== id);
   writeFileSync(TASKS_FILE_PATH, JSON.stringify(updatedTasks, null, 2), 'utf-8');
-}
+};
